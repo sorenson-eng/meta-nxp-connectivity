@@ -153,13 +153,17 @@ First, set up the i.MX Matter device. There are two ways to run the Matter appli
 Option 1
 
     $ wpa_passphrase ${SSID} ${PASSWORD} > wifiap.conf
+    $ ifconfig eth0 down
     $ modprobe moal mod_para=nxp/wifi_mod_para.conf
     $ wpa_supplicant -d -B -i mlan0 -c ./wifiap.conf
     $ sleep 5
+    $ modprobe btnxpuart
+    $ hciconfig hci0 up
     $ chip-lighting-app
 
 Option 2
 
+    $ ifconfig eth0 down
     $ modprobe moal mod_para=nxp/wifi_mod_para.conf
     $ modprobe btnxpuart
     $ hciconfig hci0 up
@@ -194,9 +198,12 @@ This chapter shows how to commission an i.MX Matter device using the i.MX commis
 First, set up the i.MX Matter device, take the chip-lighting-app as an example.
 
     $ wpa_passphrase ${SSID} ${PASSWORD} > wifiap.conf
+    $ ifconfig eth0 down
     $ modprobe moal mod_para=nxp/wifi_mod_para.conf
     $ wpa_supplicant -d -B -i mlan0 -c ./wifiap.conf
     $ sleep 5
+    $ modprobe btnxpuart
+    $ hciconfig hci0 up
     $ chip-lighting-app
 
 Then, set the Matter URL in the HA apllication, Click the "Settings", "Matter(BETA) CONFIGURE", "SUBMIT"(set the Matter URL as "ws://localhost:5580/ws") buttons on the following pages in order. After setting the Matter URL, the page will look like the last figure below.
@@ -234,3 +241,49 @@ The download failure or slow download speed may be caused by network issues. Ple
 
     $ systemctl daemon-reload
     $ systemctl restart docker
+
+### what should do if the commissioning fails?
+
+Please check the status of the Docker service, as well as the network status and the status of the Bluetooth interface.
+
+   $ systemctl status docker    # check the Docker service status
+   $ systemctl start docker     # start the Docker service
+   $ ifconfig mlan0             # check the Network status
+   $ hciconfig hci0             # check the Bluetooth status
+
+You need make sure that the Docker service is active, an IP has been assigned to the mlan0 interface, and that hci0 is up running.
+
+    root@imx93evk-iwxxx-matter:~# systemctl status docker
+    * docker.service - Docker Application Container Engine
+         Loaded: loaded (8;;file://imx93evk-iwxxx-matter/usr/lib/systemd/system/docker.service/usr/lib/systemd/system/docker.service8;;; disabled; preset: disabled)8;;
+         Active: active (running) since Tue 2024-10-22 07:09:36 UTC; 36s ago
+    TriggeredBy: * docker.socket
+           Docs: 8;;https://docs.docker.comhttps://docs.docker.com8;;8;;
+       Main PID: 681 (dockerd)
+          Tasks: 12
+         Memory: 98.1M (peak: 100.0M)
+            CPU: 1.345s
+         CGroup: /system.slice/docker.service
+             `-681 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+
+   root@imx93evk-iwxxx-matter:~# ifconfig mlan0
+   mlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.3.119  netmask 255.255.254.0  broadcast 192.168.3.255
+        inet6 2001:470:11e:f:a2cd:f3ff:fe77:e72e  prefixlen 64  scopeid 0x0<global>
+        inet6 fe80::a2cd:f3ff:fe77:e72e  prefixlen 64  scopeid 0x20<link>
+        ether a0:cd:f3:77:e7:2e  txqueuelen 1000  (Ethernet)
+        RX packets 2766  bytes 184053 (179.7 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 643  bytes 71774 (70.0 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+   root@imx93evk-iwxxx-matter:~# hciconfig hci0
+   hci0:   Type: Primary  Bus: UART
+           BD Address: A0:CD:F3:77:E7:2F  ACL MTU: 1021:7  SCO MTU: 120:6
+           UP RUNNING
+           RX bytes:849 acl:0 sco:0 events:57 errors:0
+           TX bytes:1078 acl:0 sco:0 commands:57 errors:0
+
+If the device is connected to a network cable, use the following command to turn off the ethernet interface.
+
+   $ ifconfig eth0 down
