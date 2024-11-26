@@ -44,6 +44,27 @@ do_configure:append() {
         common_configure
     fi
 
+    cd ${S}/examples/nxp-network-manager-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-battery-storage-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-device-energy-management-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-evse-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-heat-pump-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-solar-power-app/linux
+    common_configure
+
+    cd ${S}/examples/nxp-water-heater-app/linux
+    common_configure
+
     if ${DEPLOY_TRUSTY}; then
         cd ${S}/examples/lighting-app/linux
         trusty_configure
@@ -62,6 +83,27 @@ do_configure:append() {
 do_compile:append() {
 
     cd ${S}/examples/nxp-media-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-network-manager-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-battery-storage-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-device-energy-management-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-evse-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-heat-pump-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-solar-power-app/linux
+    ninja -C out/aarch64
+
+    cd ${S}/examples/nxp-water-heater-app/linux
     ninja -C out/aarch64
 
     if ${BUILD_M2ZIGBEE}; then
@@ -86,6 +128,15 @@ do_compile:append() {
 
 do_install:append() {
     install ${S}/examples/nxp-media-app/linux/out/aarch64/nxp-media-app ${D}${bindir}
+
+    install ${S}/examples/nxp-network-manager-app/linux/out/aarch64/matter-nxp-network-manager-app ${D}${bindir}
+    install ${S}/examples/nxp-battery-storage-app/linux/out/aarch64/chip-nxp-battery-storage-app ${D}${bindir}
+    install ${S}/examples/nxp-device-energy-management-app/linux/out/aarch64/chip-nxp-device-energy-management-app ${D}${bindir}
+    install ${S}/examples/nxp-evse-app/linux/out/aarch64/chip-nxp-evse-app ${D}${bindir}
+    install ${S}/examples/nxp-heat-pump-app/linux/out/aarch64/chip-nxp-heat-pump-app ${D}${bindir}
+    install ${S}/examples/nxp-solar-power-app/linux/out/aarch64/chip-nxp-solar-power-app ${D}${bindir}
+    install ${S}/examples/nxp-water-heater-app/linux/out/aarch64/chip-nxp-water-heater-app ${D}${bindir}
+
     if ${BUILD_M2ZIGBEE}; then
         install ${S}/examples/bridge-app/nxp/linux-M2ZigbeeRcp-bridge/out/aarch64/M2ZigbeeRcp-bridge ${D}${bindir}
     fi
