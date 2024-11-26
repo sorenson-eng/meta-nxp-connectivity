@@ -7,10 +7,11 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=87109e44b2fda96a8991f27684a7349c"
 S = "${WORKDIR}"
 FILES:${PN} += "${bindir}"
 
-DEPENDS += "zigbee-rcp-sdk"
+DEPENDS += " readline zigbee-rcp-sdk"
+RDEPENDS_${PN} += " readline "
 
 SRC_URI = ""
 # Zigbee RCP applications
-SRC_URI += "file://zigbee-rcp-apps-IW612-Q3-24-R4.tar"
+SRC_URI += "file://zigbee-rcp-apps-IW612-Q4-24-R3.tar"
 
 inherit pkgconfig cmake
