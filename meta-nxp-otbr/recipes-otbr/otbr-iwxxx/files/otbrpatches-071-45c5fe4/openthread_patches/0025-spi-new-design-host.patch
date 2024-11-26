@@ -31,24 +31,25 @@
 * Header for patch information.
 * Description           : Changes required by our SPI driver in order to reach up to 10MHz
 *                         SPI clock speed (dynamic configuration, default packet size...).
-* Version               : v001
+* Version               : v002
 * Mandatory/Optional    : Mandatory
 * Impact if not applied : OT host won't be able to communicate reliably with IW612 over SPI.
 */
 
 diff --git a/include/openthread/platform/radio.h b/include/openthread/platform/radio.h
-index 441f0e7f9..57a455dad 100644
+index 4d55f87d5..70cc50a8d 100644
 --- a/include/openthread/platform/radio.h
 +++ b/include/openthread/platform/radio.h
-@@ -67,6 +67,7 @@ extern "C" {
-  * @{
+@@ -68,6 +68,8 @@ extern "C" {
   *
   */
-+#define BACKWARD_COMPATIBILITY_FLAG (1U << 31)
  
++#define BACKWARD_COMPATIBILITY_FLAG (1U << 31)
++
  enum
  {
-@@ -87,6 +88,7 @@ enum
+     OT_RADIO_FRAME_MAX_SIZE = 127, ///< aMaxPHYPacketSize (IEEE 802.15.4-2006)
+@@ -87,6 +89,7 @@ enum
      OT_RADIO_LQI_NONE      = 0,   ///< LQI measurement not supported
      OT_RADIO_RSSI_INVALID  = 127, ///< Invalid or unknown RSSI value
      OT_RADIO_POWER_INVALID = 127, ///< Invalid or unknown power value
@@ -56,7 +57,7 @@ index 441f0e7f9..57a455dad 100644
  };
  
  /**
-@@ -766,6 +768,15 @@ uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance);
+@@ -790,6 +793,15 @@ uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance);
   */
  otError otPlatRadioSetBusSpeed(otInstance *aInstance, uint32_t aSpeed);
  
@@ -70,10 +71,10 @@ index 441f0e7f9..57a455dad 100644
 +void otPlatRadioSetHostBackwardCompatibilityFlags(otInstance *aInstance, uint32_t flags);
 +
  /**
-  * @}
+  * Get the bus latency in microseconds between the host and the radio chip.
   *
 diff --git a/src/lib/spinel/spinel_driver.cpp b/src/lib/spinel/spinel_driver.cpp
-index dcf244531..037916013 100644
+index 421ac47ed..695e714e3 100644
 --- a/src/lib/spinel/spinel_driver.cpp
 +++ b/src/lib/spinel/spinel_driver.cpp
 @@ -31,6 +31,7 @@
@@ -82,9 +83,9 @@ index dcf244531..037916013 100644
  #include <openthread/platform/time.h>
 +#include <openthread/platform/radio.h>
  
- #include "common/code_utils.hpp"
- #include "common/new.hpp"
-@@ -96,8 +97,8 @@ otError SpinelDriver::SendReset(uint8_t aResetType)
+ #include "lib/platform/exit_code.h"
+ #include "lib/spinel/spinel.h"
+@@ -106,8 +107,8 @@ otError SpinelDriver::SendReset(uint8_t aResetType)
      spinel_ssize_t packed;
  
      // Pack the header, command and key
@@ -93,10 +94,10 @@ index dcf244531..037916013 100644
 +    packed = spinel_datatype_pack(buffer, sizeof(buffer), SPINEL_DATATYPE_COMMAND_S SPINEL_DATATYPE_UINT8_S SPINEL_DATATYPE_UINT32_S,
 +                                  SPINEL_HEADER_FLAG | SPINEL_HEADER_IID(mIid), SPINEL_CMD_RESET, aResetType, OT_RADIO_BACKWARD_COMPATIBILITY_VERSION);
  
-     VerifyOrExit(packed > 0 && static_cast<size_t>(packed) <= sizeof(buffer), error = OT_ERROR_NO_BUFS);
+     EXPECT(packed > 0 && static_cast<size_t>(packed) <= sizeof(buffer), error = OT_ERROR_NO_BUFS);
  
 diff --git a/src/ncp/ncp_base.cpp b/src/ncp/ncp_base.cpp
-index 96e362575..1b034bda6 100644
+index 6896878fe..77a02f493 100644
 --- a/src/ncp/ncp_base.cpp
 +++ b/src/ncp/ncp_base.cpp
 @@ -38,6 +38,7 @@
@@ -115,7 +116,7 @@ index 96e362575..1b034bda6 100644
  namespace ot {
  namespace Ncp {
  
-@@ -1268,9 +1270,18 @@ otError NcpBase::CommandHandler_RESET(uint8_t aHeader)
+@@ -1279,9 +1281,18 @@ otError NcpBase::CommandHandler_RESET(uint8_t aHeader)
      otError error      = OT_ERROR_NONE;
      uint8_t reset_type = SPINEL_RESET_STACK;
  
@@ -136,10 +137,10 @@ index 96e362575..1b034bda6 100644
  
  #if OPENTHREAD_RADIO
 diff --git a/src/posix/platform/include/openthread/openthread-system.h b/src/posix/platform/include/openthread/openthread-system.h
-index 7f113492f..c51033cf2 100644
+index 3c72ad0b5..8e15f8e77 100644
 --- a/src/posix/platform/include/openthread/openthread-system.h
 +++ b/src/posix/platform/include/openthread/openthread-system.h
-@@ -64,7 +64,7 @@ enum
+@@ -65,7 +65,7 @@ enum
      OT_PLATFORM_CONFIG_SPI_DEFAULT_ALIGN_ALLOWANCE =
          16, ///< Default maximum number of 0xFF bytes to clip from start of MISO frame.
      OT_PLATFORM_CONFIG_SPI_DEFAULT_SMALL_PACKET_SIZE =
@@ -149,10 +150,10 @@ index 7f113492f..c51033cf2 100644
  };
  
 diff --git a/src/posix/platform/spi_interface.cpp b/src/posix/platform/spi_interface.cpp
-index 31e7e284a..4caa97769 100644
+index 4424fa9e5..218b88748 100644
 --- a/src/posix/platform/spi_interface.cpp
 +++ b/src/posix/platform/spi_interface.cpp
-@@ -547,7 +547,7 @@ otError SpiInterface::PushPullSpi(void)
+@@ -549,7 +549,7 @@ otError SpiInterface::PushPullSpi(void)
          if ((mSpiSlaveDataLen != 0) && (mSpiSlaveDataLen <= txFrame.GetHeaderAcceptLen()))
          {
              // WAR - Discard first transaction which as transaction greater than 32 bytes with RX data available (as RCP truncated it)

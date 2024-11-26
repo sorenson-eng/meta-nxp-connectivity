@@ -38,14 +38,13 @@
 *                       : Add Vendor specific commands for Reading the FW version.
 *                       : Add Vendor specific commands for upgrading the independant reset feature for OOB
 *                         GPIO soft reset.
-* Version               : v001
+* Version               : v002
 * Mandatory/Optional    : Optional
 * Impact if not applied : VSC commands won't be available.
 */
 
-
 diff --git a/include/openthread/platform/radio.h b/include/openthread/platform/radio.h
-index 9f6bd31a6..27fd80b34 100644
+index 45fbe4594..8771f0075 100644
 --- a/include/openthread/platform/radio.h
 +++ b/include/openthread/platform/radio.h
 @@ -2,6 +2,8 @@
@@ -57,7 +56,7 @@ index 9f6bd31a6..27fd80b34 100644
   *  Redistribution and use in source and binary forms, with or without
   *  modification, are permitted provided that the following conditions are met:
   *  1. Redistributions of source code must retain the above copyright
-@@ -435,6 +437,25 @@ typedef struct otLinkMetrics
+@@ -455,6 +457,25 @@ typedef struct otLinkMetrics
      bool mReserved : 1;   ///< Reserved, this is for reference device.
  } otLinkMetrics;
  
@@ -83,7 +82,7 @@ index 9f6bd31a6..27fd80b34 100644
  /**
   * @}
   *
-@@ -1384,11 +1405,60 @@ extern otError otPlatRadioGetRawPowerSetting(otInstance *aInstance,
+@@ -1430,11 +1451,60 @@ extern otError otPlatRadioGetRawPowerSetting(otInstance *aInstance,
   * @}
   *
   */
@@ -145,10 +144,10 @@ index 9f6bd31a6..27fd80b34 100644
  #ifdef __cplusplus
  } // end of extern "C"
 diff --git a/src/lib/spinel/radio_spinel.cpp b/src/lib/spinel/radio_spinel.cpp
-index cbb3331bf..15650f64b 100644
+index f5fb7b5d0..a38e5d757 100644
 --- a/src/lib/spinel/radio_spinel.cpp
 +++ b/src/lib/spinel/radio_spinel.cpp
-@@ -919,6 +919,111 @@ otError RadioSpinel::GetIeeeEui64(uint8_t *aIeeeEui64)
+@@ -939,6 +939,111 @@ otError RadioSpinel::GetIeeeEui64(uint8_t *aIeeeEui64)
      return OT_ERROR_NONE;
  }
  
@@ -261,10 +260,10 @@ index cbb3331bf..15650f64b 100644
  {
      otError error;
 diff --git a/src/lib/spinel/radio_spinel.hpp b/src/lib/spinel/radio_spinel.hpp
-index d053a9296..c11fe9d0e 100644
+index 1e1590880..bf86db2f4 100644
 --- a/src/lib/spinel/radio_spinel.hpp
 +++ b/src/lib/spinel/radio_spinel.hpp
-@@ -244,6 +244,99 @@ public:
+@@ -254,6 +254,99 @@ public:
       */
      otError GetIeeeEui64(uint8_t *aIeeeEui64);
  
@@ -365,10 +364,10 @@ index d053a9296..c11fe9d0e 100644
       * Sets the Extended Address for address filtering.
       *
 diff --git a/src/lib/spinel/spinel.h b/src/lib/spinel/spinel.h
-index c1865f373..f4b95b76f 100644
+index e1cb888ba..d41f76bfa 100644
 --- a/src/lib/spinel/spinel.h
 +++ b/src/lib/spinel/spinel.h
-@@ -4910,6 +4910,16 @@ enum
+@@ -4970,6 +4970,16 @@ enum
      SPINEL_PROP_NEST__END = 0x3C00,
  
      SPINEL_PROP_VENDOR__BEGIN = 0x3C00,
@@ -386,12 +385,12 @@ index c1865f373..f4b95b76f 100644
  
      SPINEL_PROP_VENDOR_ESP__BEGIN = (SPINEL_PROP_VENDOR__BEGIN + 0),
 diff --git a/src/posix/main.c b/src/posix/main.c
-index 026c6c6eb..781b0c5e0 100644
+index 40bcea70a..43cfa2851 100644
 --- a/src/posix/main.c
 +++ b/src/posix/main.c
-@@ -69,6 +69,14 @@
- 
- #include "lib/platform/reset_util.h"
+@@ -69,6 +69,15 @@
+ #include <openthread/openthread-system.h>
+ #include <openthread/platform/misc.h>
  
 +extern otError ProcessIRConfig(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 +extern otError ProcessIRCmd(void *aContext, uint8_t aArgsLength, char *aArgs[]);
@@ -401,10 +400,11 @@ index 026c6c6eb..781b0c5e0 100644
 +extern otError ProcessGetSetCcaCfg(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 +extern otError ProcessGetFwVersion(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 +extern otError ProcessGetSetIRThreshold(void *aContext, uint8_t aArgsLength, char *aArgs[]);
++
  /**
   * Initializes NCP app.
   *
-@@ -356,6 +364,14 @@ static const otCliCommand kCommands[] = {
+@@ -364,6 +373,14 @@ static const otCliCommand kCommands[] = {
      {"exit", ProcessExit},
  #endif
      {"netif", ProcessNetif},
@@ -1058,10 +1058,10 @@ index dad11a743..5a15a8f90 100644
  
      return;
 diff --git a/src/posix/platform/radio.cpp b/src/posix/platform/radio.cpp
-index f5eb17cc2..5ef6cd53e 100644
+index 6bc33c2f0..6330e95fb 100644
 --- a/src/posix/platform/radio.cpp
 +++ b/src/posix/platform/radio.cpp
-@@ -1044,6 +1044,73 @@ otError otPlatRadioReceiveAt(otInstance *aInstance, uint8_t aChannel, uint32_t a
+@@ -1048,6 +1048,73 @@ otError otPlatRadioReceiveAt(otInstance *aInstance, uint8_t aChannel, uint32_t a
      return OT_ERROR_NOT_IMPLEMENTED;
  }
  

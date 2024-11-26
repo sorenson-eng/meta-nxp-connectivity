@@ -31,16 +31,16 @@
 * Header for patch information.
 * Description           : Changes required by our SPI driver in order to reach up to 10MHz
 *                         SPI clock speed (dynamic configuration, default packet size...).
-* Version               : v001
+* Version               : v002
 * Mandatory/Optional    : Mandatory
 * Impact if not applied : OT host won't be able to communicate reliably with IW612 over SPI.
 */
 
 diff --git a/include/openthread/platform/radio.h b/include/openthread/platform/radio.h
-index 27fd80b34..441f0e7f9 100644
+index 8771f0075..4d55f87d5 100644
 --- a/include/openthread/platform/radio.h
 +++ b/include/openthread/platform/radio.h
-@@ -754,6 +754,18 @@ uint64_t otPlatRadioGetNow(otInstance *aInstance);
+@@ -778,6 +778,18 @@ uint64_t otPlatRadioGetNow(otInstance *aInstance);
   */
  uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance);
  
@@ -57,17 +57,17 @@ index 27fd80b34..441f0e7f9 100644
 +otError otPlatRadioSetBusSpeed(otInstance *aInstance, uint32_t aSpeed);
 +
  /**
-  * @}
+  * Get the bus latency in microseconds between the host and the radio chip.
   *
 diff --git a/src/lib/spinel/radio_spinel.cpp b/src/lib/spinel/radio_spinel.cpp
-index 15650f64b..62a31699d 100644
+index a38e5d757..3471ed310 100644
 --- a/src/lib/spinel/radio_spinel.cpp
 +++ b/src/lib/spinel/radio_spinel.cpp
-@@ -1976,7 +1976,39 @@ uint64_t RadioSpinel::GetNow(void)
+@@ -2056,7 +2056,39 @@ uint64_t RadioSpinel::GetNow(void)
     return (mIsTimeSynced) ? (otPlatTimeGet() + mRadioTimeOffset) : UINT64_MAX;
  }
  
--uint32_t RadioSpinel::GetBusSpeed(void) const { return mSpinelInterface->GetBusSpeed(); }
+-uint32_t RadioSpinel::GetBusSpeed(void) const { return GetSpinelDriver().GetSpinelInterface()->GetBusSpeed(); }
 +uint32_t RadioSpinel::GetBusSpeed(void)
 +{
 +    uint32_t  speed  = 0;
@@ -81,34 +81,34 @@ index 15650f64b..62a31699d 100644
 +
 +otError RadioSpinel::SetBusSpeed(uint32_t speed)
 +{
-+    uint32_t current = mSpinelInterface->GetBusSpeed();
++    uint32_t current = GetSpinelDriver().GetSpinelInterface()->GetBusSpeed();
 +    otError  error = OT_ERROR_NONE;
 +
-+    mSpinelInterface->SetBusSpeed(MIN(current, speed));
++    GetSpinelDriver().GetSpinelInterface()->SetBusSpeed(MIN(current, speed));
 +
 +    error = Set(SPINEL_PROP_VENDOR_NXP_GET_SET_RCP_FREQUENCY_CMD, SPINEL_DATATYPE_UINT32_S, speed);
 +
 +    if( error == OT_ERROR_NONE )
 +    {
 +        // Apply new frequency
-+        mSpinelInterface->SetBusSpeed(speed);
++        GetSpinelDriver().GetSpinelInterface()->SetBusSpeed(speed);
 +    }
 +    else
 +    {
 +        // Back to old frequency
-+        mSpinelInterface->SetBusSpeed(current);
++        GetSpinelDriver().GetSpinelInterface()->SetBusSpeed(current);
 +    }
 +
 +    return error;
 +}
  
- void RadioSpinel::HandleRcpUnexpectedReset(spinel_status_t aStatus)
- {
+ uint32_t RadioSpinel::GetBusLatency(void) const { return mBusLatency; }
+ 
 diff --git a/src/lib/spinel/radio_spinel.hpp b/src/lib/spinel/radio_spinel.hpp
-index c11fe9d0e..49ab7559e 100644
+index bf86db2f4..6a55a98d2 100644
 --- a/src/lib/spinel/radio_spinel.hpp
 +++ b/src/lib/spinel/radio_spinel.hpp
-@@ -932,7 +932,16 @@ public:
+@@ -970,7 +970,16 @@ public:
       * @returns   bus speed in bits/second.
       *
       */
@@ -125,12 +125,12 @@ index c11fe9d0e..49ab7559e 100644
 +    otError SetBusSpeed(uint32_t aSpeed);
  
      /**
-      * Returns the co-processor sw version string.
+      * Returns the bus latency between the host and the radio.
 diff --git a/src/lib/spinel/spinel.h b/src/lib/spinel/spinel.h
-index f4b95b76f..d7df0b58b 100644
+index d41f76bfa..d28e72430 100644
 --- a/src/lib/spinel/spinel.h
 +++ b/src/lib/spinel/spinel.h
-@@ -4917,6 +4917,7 @@ enum
+@@ -4977,6 +4977,7 @@ enum
      SPINEL_PROP_VENDOR_NXP_GET_SET_TXPOWERLIMIT_CMD = (SPINEL_PROP_VENDOR__BEGIN + 0x10B),
      SPINEL_PROP_VENDOR_NXP_GET_SET_CCA_CONFIGURE_CMD = (SPINEL_PROP_VENDOR__BEGIN + 0x10C),
      SPINEL_PROP_VENDOR_NXP_GET_FW_VERSION_CMD = (SPINEL_PROP_VENDOR__BEGIN + 0x10D),
@@ -139,10 +139,10 @@ index f4b95b76f..d7df0b58b 100644
      SPINEL_CMD_VENDOR_NXP_MFG  = (SPINEL_CMD_VENDOR__BEGIN + 0x3FF),
  
 diff --git a/src/lib/spinel/spinel_interface.hpp b/src/lib/spinel/spinel_interface.hpp
-index 10d0c9637..b44be2ab5 100644
+index 4a110fb0a..6050b574a 100644
 --- a/src/lib/spinel/spinel_interface.hpp
 +++ b/src/lib/spinel/spinel_interface.hpp
-@@ -130,7 +130,15 @@ public:
+@@ -132,7 +132,15 @@ public:
       * @returns   Bus speed in bits/second.
       *
       */
@@ -159,7 +159,7 @@ index 10d0c9637..b44be2ab5 100644
  
      /**
       * Hardware resets the RCP.
-@@ -139,6 +147,7 @@ public:
+@@ -141,6 +149,7 @@ public:
       * @retval OT_ERROR_NOT_IMPLEMENT   The hardware reset is not implemented.
       *
       */
@@ -185,7 +185,7 @@ index c6d105156..871a78985 100644
  
      // Pass the received frame to base class to process.
 diff --git a/src/posix/main.c b/src/posix/main.c
-index 781b0c5e0..a86829068 100644
+index 43cfa2851..d6fbe2cbf 100644
 --- a/src/posix/main.c
 +++ b/src/posix/main.c
 @@ -76,6 +76,7 @@ extern otError ProcessGetSetTxPowerLimit(void *aContext, uint8_t aArgsLength, ch
@@ -194,9 +194,9 @@ index 781b0c5e0..a86829068 100644
  extern otError ProcessGetFwVersion(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 +extern otError ProcessGetSetSpiFrequency(void *aContext, uint8_t aArgsLength, char *aArgs[]);
  extern otError ProcessGetSetIRThreshold(void *aContext, uint8_t aArgsLength, char *aArgs[]);
+ 
  /**
-  * Initializes NCP app.
-@@ -371,6 +372,7 @@ static const otCliCommand kCommands[] = {
+@@ -380,6 +381,7 @@ static const otCliCommand kCommands[] = {
      {"mfgcmd", ProcessMfgCommands}, //=> Generic VSC for MFG RF commands
      {"ccacfg", ProcessGetSetCcaCfg}, //=> Set/Get CCA configuration for 15.4 CCA Before Tx operation
      {"fwversion", ProcessGetFwVersion}, //=> Get firmware version for 15.4
@@ -205,7 +205,7 @@ index 781b0c5e0..a86829068 100644
  };
  
 diff --git a/src/posix/platform/daemon.cpp b/src/posix/platform/daemon.cpp
-index 5a15a8f90..15edc3df4 100644
+index 5a15a8f90..269a9f8c2 100644
 --- a/src/posix/platform/daemon.cpp
 +++ b/src/posix/platform/daemon.cpp
 @@ -43,6 +43,7 @@
@@ -303,10 +303,10 @@ index c6e01c7b2..36eee3492 100644
      /**
       * Hardware resets the RCP.
 diff --git a/src/posix/platform/radio.cpp b/src/posix/platform/radio.cpp
-index 5ef6cd53e..b715981da 100644
+index 6330e95fb..258978cde 100644
 --- a/src/posix/platform/radio.cpp
 +++ b/src/posix/platform/radio.cpp
-@@ -934,6 +934,12 @@ uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance)
+@@ -932,6 +932,12 @@ uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance)
      return GetRadioSpinel().GetBusSpeed();
  }
  
@@ -316,14 +316,14 @@ index 5ef6cd53e..b715981da 100644
 +    return GetRadioSpinel().SetBusSpeed(aSpeed);
 +}
 +
- #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE || OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
- uint8_t otPlatRadioGetCslAccuracy(otInstance *aInstance)
+ uint32_t otPlatRadioGetBusLatency(otInstance *aInstance)
  {
+     OT_UNUSED_VARIABLE(aInstance);
 diff --git a/src/posix/platform/spi_interface.cpp b/src/posix/platform/spi_interface.cpp
-index c74299ecb..31e7e284a 100644
+index aec458839..4424fa9e5 100644
 --- a/src/posix/platform/spi_interface.cpp
 +++ b/src/posix/platform/spi_interface.cpp
-@@ -81,6 +81,7 @@ SpiInterface::SpiInterface(const Url::Url &aRadioUrl)
+@@ -83,6 +83,7 @@ SpiInterface::SpiInterface(const Url::Url &aRadioUrl)
      , mDidPrintRateLimitLog(false)
      , mSpiSlaveDataLen(0)
      , mDidRxFrame(false)
@@ -331,7 +331,7 @@ index c74299ecb..31e7e284a 100644
  {
  }
  
-@@ -91,6 +92,7 @@ void SpiInterface::ResetStates(void)
+@@ -93,6 +94,7 @@ void SpiInterface::ResetStates(void)
      mSpiTxPayloadSize     = 0;
      mDidPrintRateLimitLog = false;
      mSpiSlaveDataLen      = 0;
@@ -339,7 +339,7 @@ index c74299ecb..31e7e284a 100644
      memset(mSpiTxFrameBuffer, 0, sizeof(mSpiTxFrameBuffer));
      memset(&mInterfaceMetrics, 0, sizeof(mInterfaceMetrics));
      mInterfaceMetrics.mRcpInterfaceType = kSpinelInterfaceTypeSpi;
-@@ -521,6 +523,7 @@ otError SpiInterface::PushPullSpi(void)
+@@ -523,6 +525,7 @@ otError SpiInterface::PushPullSpi(void)
              mInterfaceMetrics.mTransferredGarbageFrameCount++;
              mSpiTxRefusedCount++;
              mSpiSlaveDataLen = 0;
@@ -347,7 +347,7 @@ index c74299ecb..31e7e284a 100644
  
              LogWarn("Garbage in header : %02X %02X %02X %02X %02X", spiRxFrame[0], spiRxFrame[1], spiRxFrame[2],
                      spiRxFrame[3], spiRxFrame[4]);
-@@ -543,21 +546,35 @@ otError SpiInterface::PushPullSpi(void)
+@@ -545,21 +548,35 @@ otError SpiInterface::PushPullSpi(void)
          // Handle received packet, if any.
          if ((mSpiSlaveDataLen != 0) && (mSpiSlaveDataLen <= txFrame.GetHeaderAcceptLen()))
          {

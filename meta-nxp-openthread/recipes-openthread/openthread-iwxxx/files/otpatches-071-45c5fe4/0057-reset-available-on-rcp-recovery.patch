@@ -29,23 +29,24 @@
 
 /*
 * Header for patch information.
-* Description           : Host fails to check success of software reset due to incorrect check of
-*                         mIsCoprocessorReady flag.
-* Version               : v001
-* Mandatory/Optional    : Mandatory
-* Impact if not applied : Host will exit due to failure in software reset.
+* Description : Reset shall be available on RCP recovery mechanism (when multipan feature disabled)
+* Version : v002
+* Mandatory/Optional : Mandatory
+* Impact if not applied : ot-daemon might not recover
 */
 
 diff --git a/src/lib/spinel/spinel_driver.cpp b/src/lib/spinel/spinel_driver.cpp
-index 037916013..20e0ada2b 100644
+index 695e714e3..93192bf35 100644
 --- a/src/lib/spinel/spinel_driver.cpp
 +++ b/src/lib/spinel/spinel_driver.cpp
-@@ -119,7 +119,7 @@ void SpinelDriver::ResetCoprocessor(bool aSoftwareReset)
+@@ -124,8 +124,10 @@ void SpinelDriver::ResetCoprocessor(bool aSoftwareReset)
+     bool hardwareReset;
+     bool resetDone = false;
+ 
++#if OPENTHREAD_CONFIG_MULTIPAN_RCP_ENABLE
+     // Avoid resetting the device twice in a row in Multipan RCP architecture
+     EXPECT(!mIsCoprocessorReady, resetDone = true);
++#endif
  
      mWaitingKey = SPINEL_PROP_LAST_STATUS;
  
--    if (aSoftwareReset && (SendReset(SPINEL_RESET_STACK) == OT_ERROR_NONE) && (!mIsCoprocessorReady) &&
-+    if (aSoftwareReset && (SendReset(SPINEL_RESET_STACK) == OT_ERROR_NONE) &&
-         (WaitResponse() == OT_ERROR_NONE))
-     {
-         VerifyOrExit(mIsCoprocessorReady, resetDone = false);

@@ -29,24 +29,30 @@
 
 /*
 * Header for patch information.
-* Description : Reset shall be available on RCP recovery mechanism (when multipan feature disabled)
-* Version : v001
+* Description : SRPClient close socket on connect error to avoid to fail the next time.
+* Version : v002
 * Mandatory/Optional : Mandatory
-* Impact if not applied : ot-daemon might not recover
+* Impact if not applied : assert !IsOpen(aSocket) in ot::Ip6::Udp::Open(src/core/net/udp6.cpp) on next run ofSrpClient after connect failed (Network is unreachable).
 */
 
-diff --git a/src/lib/spinel/spinel_driver.cpp b/src/lib/spinel/spinel_driver.cpp
-index 037916013..88a454228 100644
---- a/src/lib/spinel/spinel_driver.cpp
-+++ b/src/lib/spinel/spinel_driver.cpp
-@@ -114,8 +114,10 @@ void SpinelDriver::ResetCoprocessor(bool aSoftwareReset)
-     bool hardwareReset;
-     bool resetDone = false;
+diff --git a/src/core/net/srp_client.cpp b/src/core/net/srp_client.cpp
+index a70589aae..91a8d9aa8 100644
+--- a/src/core/net/srp_client.cpp
++++ b/src/core/net/srp_client.cpp
+@@ -385,7 +385,15 @@ Error Client::Start(const Ip6::SockAddr &aServerSockAddr, Requester aRequester)
+                  error = (aServerSockAddr == GetServerAddress()) ? kErrorNone : kErrorBusy);
  
-+#if OPENTHREAD_CONFIG_MULTIPAN_RCP_ENABLE
-     // Avoid resetting the device twice in a row in Multipan RCP architecture
-     VerifyOrExit(!mIsCoprocessorReady, resetDone = true);
-+#endif
+     SuccessOrExit(error = mSocket.Open());
+-    SuccessOrExit(error = mSocket.Connect(aServerSockAddr));
++
++    error = mSocket.Connect(aServerSockAddr);
++    if (error != kErrorNone)
++    {
++        LogInfo("Failed to connect to server %s: %s", aServerSockAddr.GetAddress().ToString().AsCString(),
++                ErrorToString(error));
++        IgnoreError(mSocket.Close());
++        ExitNow();
++    }
  
-     mWaitingKey = SPINEL_PROP_LAST_STATUS;
- 
+     LogInfo("%starting, server %s", (aRequester == kRequesterUser) ? "S" : "Auto-s",
+             aServerSockAddr.ToString().AsCString());

@@ -31,19 +31,19 @@
 * Header for patch information.
 * Description           : Retry mechanism if mTxRadioTid is expected and current command failed
 *                         with OT_ERROR_BUSY.
-* Version               : v002
+* Version               : v003
 * Mandatory/Optional    : Mandatory
 * Impact if not applied : Under corner scenario, OT host SW may crash.
 */
 
 diff --git a/src/lib/spinel/radio_spinel.cpp b/src/lib/spinel/radio_spinel.cpp
-index 0347d53e4..43e5624f9 100644
+index cc47069be..7f87317b7 100644
 --- a/src/lib/spinel/radio_spinel.cpp
 +++ b/src/lib/spinel/radio_spinel.cpp
-@@ -1489,6 +1489,19 @@ otError RadioSpinel::RequestV(uint32_t command, spinel_prop_key_t aKey, const ch
-     VerifyOrExit(tid > 0, error = OT_ERROR_BUSY);
+@@ -1548,6 +1548,19 @@ otError RadioSpinel::RequestV(uint32_t command, spinel_prop_key_t aKey, const ch
+     EXPECT(tid > 0, error = OT_ERROR_BUSY);
  
-     error = mSpinelDriver.SendCommand(command, aKey, tid, aFormat, aArgs);
+     error = GetSpinelDriver().SendCommand(command, aKey, tid, aFormat, aArgs);
 +
 +    if( mTxRadioTid && (error == OT_ERROR_BUSY) )
 +    {
@@ -53,10 +53,10 @@ index 0347d53e4..43e5624f9 100644
 +        if( error == OT_ERROR_NONE )
 +        {
 +            // Call again the current command. SPI interface shall be available now !
-+            error = mSpinelDriver.SendCommand(command, aKey, tid, aFormat, aArgs);
++            error = GetSpinelDriver().SendCommand(command, aKey, tid, aFormat, aArgs);
 +        }
 +    }
 +
-     SuccessOrExit(error);
+     EXPECT_NO_ERROR(error);
  
      if (aKey == SPINEL_PROP_STREAM_RAW)

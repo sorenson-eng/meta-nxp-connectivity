@@ -1,6 +1,6 @@
 /*
 *  Copyright (c) 2020, The OpenThread Authors.
-*  Copyright 2023-2024 NXP
+*  Copyright 2024 NXP
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,27 @@
 
 /*
 * Header for patch information.
-* Description           : Set default RSSI on reset.
-* Version               : v002
-* Mandatory/Optional    : Optional
-* Impact if not applied : Previously latched RSSI value will be used even after a reset.
+* Description : Do not forward any messages if wpan interface is down.
+* Version : v001
+* Mandatory/Optional : Optional
+* Impact if not applied : Sometimes warning occurs when 'ifconfig down' is executed
 */
-
-diff --git a/src/lib/spinel/radio_spinel.cpp b/src/lib/spinel/radio_spinel.cpp
-index 4ee2a2bfa..0347d53e4 100644
---- a/src/lib/spinel/radio_spinel.cpp
-+++ b/src/lib/spinel/radio_spinel.cpp
-@@ -1791,6 +1791,7 @@ otError RadioSpinel::Enable(otInstance *aInstance)
-     SuccessOrExit(error = Set(SPINEL_PROP_MAC_15_4_PANID, SPINEL_DATATYPE_UINT16_S, mPanId));
-     SuccessOrExit(error = Set(SPINEL_PROP_MAC_15_4_SADDR, SPINEL_DATATYPE_UINT16_S, mShortAddress));
-     SuccessOrExit(error = Get(SPINEL_PROP_PHY_RX_SENSITIVITY, SPINEL_DATATYPE_INT8_S, &mRxSensitivity));
-+    SuccessOrExit(error = Set(SPINEL_PROP_PHY_RSSI, SPINEL_DATATYPE_INT8_S));
  
-     mState = kStateSleep;
+diff --git a/src/core/net/ip6.cpp b/src/core/net/ip6.cpp
+index 6ca08a024..be1de8306 100644
+--- a/src/core/net/ip6.cpp
++++ b/src/core/net/ip6.cpp
+@@ -1125,8 +1125,11 @@ Error Ip6::HandleDatagram(OwnedPtr<Message> aMessagePtr, bool aIsReassembled)
+         }
+ #endif
  
+-        // Always forward multicast packets to host network stack
+-        forwardHost = true;
++        if (Get<ThreadNetif>().IsUp())
++        {
++            // Always forward multicast packets to host network stack
++            forwardHost = true;
++        }
+ 
+         if ((aMessagePtr->IsOriginThreadNetif() || aMessagePtr->GetMulticastLoop()) &&
+             Get<ThreadNetif>().IsMulticastSubscribed(header.GetDestination()))

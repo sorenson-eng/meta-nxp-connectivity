@@ -29,39 +29,21 @@
 
 /*
 * Header for patch information.
-* Description           : Added debug prints related to CSL timestamp for debug purpose.
-* Version               : v002
+* Description           : Set default RSSI on reset.
+* Version               : v003
 * Mandatory/Optional    : Optional
-* Impact if not applied : CSL timestamps won't be logged. Limited debug capabilities.
+* Impact if not applied : Previously latched RSSI value will be used even after a reset.
 */
 
-diff --git a/src/core/thread/csl_tx_scheduler.cpp b/src/core/thread/csl_tx_scheduler.cpp
-index 35a070c1e..15a201b9d 100644
---- a/src/core/thread/csl_tx_scheduler.cpp
-+++ b/src/core/thread/csl_tx_scheduler.cpp
-@@ -170,6 +170,7 @@ uint32_t CslTxScheduler::GetNextCslTransmissionDelay(const Child &aChild,
- 
-     aDelayFromLastRx = static_cast<uint32_t>(nextTxWindow - aChild.GetLastRxTimestamp());
- 
-+    otLogInfoPlat("CSL radioNow = %lu, periodInUS = %hu,firstTXWindow = %lu, nextTxWindow = %lu, aDelayFromLastRx = %u, lastRxTimeStamp = %lu", radioNow, periodInUs, firstTxWindow, nextTxWindow, aDelayFromLastRx,aChild.GetLastRxTimestamp());
-     return static_cast<uint32_t>(nextTxWindow - radioNow - aAheadUs);
- }
- 
 diff --git a/src/lib/spinel/radio_spinel.cpp b/src/lib/spinel/radio_spinel.cpp
-index f17e3c70d..327344fc6 100644
+index 7418e2372..cc47069be 100644
 --- a/src/lib/spinel/radio_spinel.cpp
 +++ b/src/lib/spinel/radio_spinel.cpp
-@@ -1864,7 +1864,12 @@ exit:
- #endif // OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
- }
+@@ -1849,6 +1849,7 @@ otError RadioSpinel::Enable(otInstance *aInstance)
+     EXPECT_NO_ERROR(error = Set(SPINEL_PROP_MAC_15_4_PANID, SPINEL_DATATYPE_UINT16_S, mPanId));
+     EXPECT_NO_ERROR(error = Set(SPINEL_PROP_MAC_15_4_SADDR, SPINEL_DATATYPE_UINT16_S, mShortAddress));
+     EXPECT_NO_ERROR(error = Get(SPINEL_PROP_PHY_RX_SENSITIVITY, SPINEL_DATATYPE_INT8_S, &mRxSensitivity));
++    EXPECT_NO_ERROR(error = Set(SPINEL_PROP_PHY_RSSI, SPINEL_DATATYPE_INT8_S));
  
--uint64_t RadioSpinel::GetNow(void) { return (mIsTimeSynced) ? (otPlatTimeGet() + mRadioTimeOffset) : UINT64_MAX; }
-+uint64_t RadioSpinel::GetNow(void)
-+{
-+   otLogDebgPlat("mIsTimeSynced = %d, otPlatTimeGet = %llu, mRadioTimeOffset = %llu",mIsTimeSynced, static_cast<long long unsigned int>(otPlatTimeGet()), static_cast<long long unsigned int>(mRadioTimeOffset));
-+
-+   return (mIsTimeSynced) ? (otPlatTimeGet() + mRadioTimeOffset) : UINT64_MAX;
-+}
- 
- uint32_t RadioSpinel::GetBusSpeed(void) const { return mSpinelInterface->GetBusSpeed(); }
+     mState = kStateSleep;
  
