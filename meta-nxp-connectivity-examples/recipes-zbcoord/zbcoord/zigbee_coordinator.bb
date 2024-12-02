@@ -4,9 +4,9 @@ DESCRIPTION = "This recipe builds the Zigbee Coordinator application from the sp
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-SRC_URI = "git://bitbucket.sw.nxp.com/connint/zigbee_public.git;branch=release/24.12.00-pvw2;protocol=ssh"
+SRC_URI = "git://github.com/nxp-mcuxpresso/mcuxsdk-middleware-zigbee.git;branch=release/24.12.00-pvw2;protocol=https"
 SRC_URI += "file://0001-fix-imx-build-error.patch"
-SRCREV = "92d256ed1729db7526539bd472ec6c7f1c347a8e"
+SRCREV = "24281227192e4b2e090c5e1a4bedae55a9a537c4"
 
 python() {
     http_proxy = d.getVar("http_proxy") or ""
