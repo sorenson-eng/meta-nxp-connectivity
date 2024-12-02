@@ -17,7 +17,7 @@ SRC_URI += "file://IW610-Q4-24-R3/sduart_iw610.bin.se"
 SRC_URI += "file://IW610-Q4-24-R3/uart_iw610_bt.bin.se"
 SRC_URI += "file://IW610-Q4-24-R3/uartspi_iw610.bin.se"
 SRC_URI += "file://IW610-Q4-24-R3/sduartspi_iw610.bin.se"
-SRC_URI += "file://0001-PATCH-Add-IW610-15.4-firmware-calibration-file-and-u.patch"
+SRC_URI += "file://0001-Add-IW610-15.4-firmware-calibration-file-and-use-it-.patch"
 
 do_install:prepend() {
     rm -f ${S}/nxp/FwImage_IW612_SD/*
