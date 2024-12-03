@@ -5,6 +5,19 @@
 
 #include "imx91-11x11-evk.dts"
 
+&lpuart5 {
+        /* BT */
+        pinctrl-names = "default";
+        pinctrl-assert-gpios = <&pcal6524 19 GPIO_ACTIVE_HIGH>;
+        pinctrl-0 = <&pinctrl_uart5>;
+        status = "okay";
+
+        bluetooth {
+                compatible = "nxp,88w8987-bt";
+                fw-init-baudrate = <3000000>;
+        };
+};
+
 &flexcan2 {
 	status = "disabled";
 };
