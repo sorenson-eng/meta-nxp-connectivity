@@ -26,7 +26,7 @@ This document describes how to use the Matter demos on the i.MX MPU platforms. I
 
 - i.MX8ULP EVK + IW416(WiFi-BT combo module)  → Role: Matter controller or Matter end device
 
-- i.MX91 EVK + IW612(WiFi-BT-Thread tri-radio chipset)  → Role: Matter controller or Matter end device
+- i.MX91 EVK + IW610(WiFi-BT-Thread tri-radio chipset)  → Role: Matter controller or Matter end device
 
    For more information on the details of the i.MX MPU Matter platforms, please visit [NXP MPU Matter platform](https://www.nxp.com/design/development-boards/i-mx-evaluation-and-development-boards/mpu-linux-hosted-matter-development-platform:MPU-LINUX-MATTER-DEV-PLATFORM).
 
@@ -110,6 +110,8 @@ Step2. Connecting to the Wi-Fi AP, Enabling BT, and Setting Up OTBR on the i.MX 
         otbr-web &
         、、、
 
+***Note: please use the otbr-agent-iw610-spi instead of otbr-agent-iwxxx-spi on i.MX91 device.***
+
 #### For i.MX8M Mini EVK + 88W8987 + K32W platform or i.MX8ULP EVK + IW416 + K32W platform:
 
         、、、
@@ -179,6 +181,8 @@ The i.MX6ULL OTBR setup commands are same with the i.MX8M Mini commands.
 
 ### Configure OpenThread Network
 
+<a name="start-thread"></a>
+
 You can form the Openthread network manually by following steps:
 
     $ ot-ctl dataset init new
@@ -191,29 +195,7 @@ Then, you should get thread network credentials information.
     $ ot-ctl dataset active -x
     # Then you will get a dataset like "0e080000000000010000000300001035060004001fffe00208d625374d9c65c2a30708fd57eb72a74fa52505108a177ca3b66becf3bbe2149eb3d135c8030f4f70656e5468726561642d656338350102ec85041044ac05395e78940b72c1df1e6ad02a120c0402a0f7f8"
 
-***Note: please use the ot-ctl-iwxxx-spi instead of ot-ctl on i.MX93 and i.MX91 device.***
-
-### Setup ot-daemon on i.MX MPU platform
-
-Please use below commands to setup ot-daemon:
-
-    #For i.MX8M Mini EVK + 88W8987, i.MX8ULP EVK and i.MX6ULL EVK + 88W8987 with K32W RCP platform:
-
-    $ ot-daemon 'spinel+hdlc+uart:///dev/ttyUSB0?uart-baudrate=1000000' &
-
-    #For i.MX93 EVK and i.MX91 EVK platform:
-
-    $ modprobe moal mod_para=nxp/wifi_mod_para.conf
-    $ ot-daemon-iwxxx-spi 'spinel+spi:///dev/spidev0.0?gpio-reset-device=/dev/gpiochip4&gpio-int-device=/dev/gpiochip5&gpio-int-line=10&gpio-reset-line=1&spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
-
-You can form the Openthread network manually by following steps:
-
-    $ ot-client-ctl dataset init new
-    $ ot-client-ctl dataset commit active
-    $ ot-client-ctl ifconfig up
-    $ ot-client-ctl thread start
-
-***Note: please use the ot-client-iwxxx-spi instead of ot-client-ctl on i.MX93 and i.MX91 device.***
+***Note: please use the ot-ctl-iwxxx-spi instead of ot-ctl on i.MX93 and use the ot-ctl-iw610-spi on i.MX91 device.***
 
 ### Factory reset lighting application on K32W DK6
 
@@ -247,6 +229,32 @@ If there is a message **“Device commissioning completed with success”** in t
     $ chip-tool onoff read on-off 8888 1
 
 Since chip-tool-trusty can run on the i.MX8M Mini EVK platform, the chip-tool in the above commands can replace chip-tool-trusty. **Note that before running chip-tool-trusty, you should use to the [enable command](#enable-the-secure-storage-service) to enable the secure storage service.**
+
+### Setup ot-daemon on i.MX MPU platform
+
+Please use below commands to setup ot-daemon on an device:
+
+    #load WiFi driver and FW
+    $ modprobe moal mod_para=nxp/wifi_mod_para.conf
+
+    #For i.MX8M Mini EVK + 88W8987, i.MX8ULP EVK and i.MX6ULL EVK + 88W8987 with K32W RCP:
+    $ ot-daemon 'spinel+hdlc+uart:///dev/ttyUSB0?uart-baudrate=1000000' &
+
+    #For i.MX93 EVK + IW612:
+    $ ot-daemon-iwxxx-spi 'spinel+spi:///dev/spidev0.0?gpio-reset-device=/dev/gpiochip4&gpio-int-device=/dev/gpiochip5&gpio-int-line=10&gpio-reset-line=1&spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
+
+    #For i.MX91 EVK + IW610:
+    $ ot-daemon-iw610-spi 'spinel+spi:///dev/spidev0.0?gpio-reset-device=/dev/gpiochip4&gpio-int-device=/dev/gpiochip5&gpio-int-line=10&gpio-reset-line=1&spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
+
+You can test the ot-daemon with another device running otbr-agent, [start the thread network](#start-thread) on the other device.
+
+Then you can form the Openthread network manually by following steps on the device running ot-daemon:
+
+    $ ot-client-ctl dataset set active 0e080000000000010000000300001735060004001fffe002082dc54ed03afaa5220708fdad8f0074b8f0790510c6d2c28a700176d8cd8e7d49a64395f8030f4f70656e5468726561642d36333130010263100410fed04e9e0912590b8d2d725a6ab33db50c0402a0f7f8
+    $ ot-client-ctl ifconfig up
+    $ ot-client-ctl thread start
+
+***Note: please use the ot-client-iwxxx-spi instead of ot-client-ctl on i.MX93 and ot-client-iw610-spi on i.MX91 device.***
 
 <a name="other-matter-demos"></a>
 
