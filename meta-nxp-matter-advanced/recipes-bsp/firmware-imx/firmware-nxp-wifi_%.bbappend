@@ -4,20 +4,33 @@ LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=ca53281cc0caa7e320d4945a896fb837"
 
 IMX_FIRMWARE_SRC ?= "git://github.com/nxp-imx/imx-firmware.git;protocol=https"
 SRC_URI = "${IMX_FIRMWARE_SRC};branch=${SRCBRANCH}"
-SRCBRANCH = "lf-6.6.36_2.1.0"
-SRCREV = "1b26d19284d202b1531837ce37a05afc49ad1d98"
+SRCBRANCH = "lf-6.6.52_2.2.0"
+SRCREV = "2978f3c88d6bcc5695a7b45f1936f18d31eebfa8"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://IW612-Q3-24-R4/sduart_nw61x_v1.bin.se"
-SRC_URI += "file://IW612-Q3-24-R4/sd_w61x_v1.bin.se"
-SRC_URI += "file://IW612-Q3-24-R4/uartspi_n61x_v1.bin.se"
-SRC_URI += "file://IW612-Q3-24-R4/uartuart_n61x_v1.bin.se"
+SRC_URI += "file://IW612-Q4-24-R3-p21.12/sduart_nw61x_v1.bin.se"
+SRC_URI += "file://IW612-Q4-24-R3-p21.12/sd_w61x_v1.bin.se"
+SRC_URI += "file://IW612-Q4-24-R3-p21.12/uartspi_n61x_v1.bin.se"
+
+SRC_URI += "file://IW610-Q4-24-R3-p43/sd_iw610.bin.se"
+SRC_URI += "file://IW610-Q4-24-R3-p43/sduart_iw610.bin.se"
+SRC_URI += "file://IW610-Q4-24-R3-p43/uart_iw610_bt.bin.se"
+SRC_URI += "file://IW610-Q4-24-R3-p43/uartspi_iw610.bin.se"
+SRC_URI += "file://IW610-Q4-24-R3-p43/sduartspi_iw610.bin.se"
+SRC_URI += "file://0001-Add-IW610-15.4-firmware-calibration-file-and-use-it-.patch"
+
 do_install:prepend() {
-    rm -f ${S}/nxp/FwImage_IW612_SD/*
-    cp ${WORKDIR}/IW612-Q3-24-R4/sduart_nw61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
-    cp ${WORKDIR}/IW612-Q3-24-R4/sd_w61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
-    cp ${WORKDIR}/IW612-Q3-24-R4/uartspi_n61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
-    cp ${WORKDIR}/IW612-Q3-24-R4/uartuart_n61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
+    rm -f ${S}/nxp/FwImage_IW612_SD/*.se
+    cp ${WORKDIR}/IW612-Q4-24-R3-p21.12/sduart_nw61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
+    cp ${WORKDIR}/IW612-Q4-24-R3-p21.12/sd_w61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
+    cp ${WORKDIR}/IW612-Q4-24-R3-p21.12/uartspi_n61x_v1.bin.se ${S}/nxp/FwImage_IW612_SD
+
+    rm -f ${S}/nxp/FwImage_IW610_SD/*.se
+    cp ${WORKDIR}/IW610-Q4-24-R3-p43/sd_iw610.bin.se ${S}/nxp/FwImage_IW610_SD
+    cp ${WORKDIR}/IW610-Q4-24-R3-p43/sduart_iw610.bin.se ${S}/nxp/FwImage_IW610_SD
+    cp ${WORKDIR}/IW610-Q4-24-R3-p43/uart_iw610_bt.bin.se ${S}/nxp/FwImage_IW610_SD
+    cp ${WORKDIR}/IW610-Q4-24-R3-p43/uartspi_iw610.bin.se ${S}/nxp/FwImage_IW610_SD
+    cp ${WORKDIR}/IW610-Q4-24-R3-p43/sduartspi_iw610.bin.se ${S}/nxp/FwImage_IW610_SD
 }
 
 do_install() {
@@ -37,11 +50,15 @@ FILES:${PN}-nxp9098-common = " \
     ${nonarch_base_libdir}/firmware/nxp/uart9098_bt_v1.bin \
 "
 
-FILES:${PN}-nxpiw612-sdio += " \
-    ${nonarch_base_libdir}/firmware/nxp/uartuart_n61x_v1.bin.se \
+FILES:${PN}-nxpiw610-sdio += " \
+    ${nonarch_base_libdir}/firmware/nxp/sd_iw610.bin.se \
+    ${nonarch_base_libdir}/firmware/nxp/sduart_iw610.bin.se \
+    ${nonarch_base_libdir}/firmware/nxp/uart_iw610_bt.bin.se \
+    ${nonarch_base_libdir}/firmware/nxp/uartspi_iw610.bin.se \
+    ${nonarch_base_libdir}/firmware/nxp/sduartspi_iw610.bin.se \
+    ${nonarch_base_libdir}/firmware/nxp/sdiw610_WlanCalData_ext.conf \
 "
-
-PACKAGES += "${PN}-all-sdio ${PN}-all-pcie"
+PACKAGES += "${PN}-nxpiw610-sdio ${PN}-all-sdio ${PN}-all-pcie"
 
 RDEPENDS:${PN}-all-sdio = " \
     ${PN}-nxp8801-sdio \
@@ -49,6 +66,7 @@ RDEPENDS:${PN}-all-sdio = " \
     ${PN}-nxp8997-sdio \
     ${PN}-nxp9098-sdio \
     ${PN}-nxpiw416-sdio \
+    ${PN}-nxpiw610-sdio \
     ${PN}-nxpiw612-sdio \
 "
 

@@ -26,9 +26,9 @@ This repository contains the i.MX MPU project Matter related Yocto recipes. The 
  - OpenThread Daemon: https://github.com/openthread/openthread
  - OpenThread Border Router: https://github.com/openthread/ot-br-posix
 
-All the software components revisions are based on [Matter v1.3](https://github.com/project-chip/connectedhomeip/tree/v1.3-branch)
+All the software components revisions are based on [Matter v1.4](https://github.com/project-chip/connectedhomeip/tree/v1.4-branch)
 
-The Following Matter related binaries will be installed into the Yocto image root filesystem by this Yocto layer recipes:
+The following Matter related binaries will be installed into the Yocto image root filesystem by this Yocto layer recipes:
  - chip-lighting-app: Matter lighting app demo
  - chip-lighting-app-trusty: Matter lighting app with enhanced security on i.MX8M Mini
  - chip-all-clusters-app: Matter all-clusters demo
@@ -54,13 +54,17 @@ The Following Matter related binaries will be installed into the Yocto image roo
  - ot-client-iwxxx-spi: OpenThread ctrl tool for OpenThread client of the IW612 chipset
  - otbr-agent-iwxxx-spi: OpenThread Border Router agent of the IW612 chipset
  - ot-ctl-iwxxx-spi: OpenThread Border Router ctrl tool of the IW612 chipset
+ - ot-daemon-iw610-spi: OpenThread Daemon for OpenThread client of the IW610 chipset
+ - ot-client-iw610-spi: OpenThread ctrl tool for OpenThread client of the IW610 chipset
+ - otbr-agent-iw610-spi: OpenThread Border Router agent of the IW610 chipset
+ - ot-ctl-iw610-spi: OpenThread Border Router ctrl tool of the IW610 chipset
  - otbr-web: OpenThread Border Router web management daemon
 
 <a name="imx-mpu-platform"></a>
 
 # i.MX MPU Matter platform
 
-We currently support 4 i.MX MPU platforms, which are the i.MX93 EVK, the i.MX8M Mini EVK, the i.MX6ULL EVK and the i.MX8ULP EVK. For more details, please refer to the [NXP i.MX MPU Matter Platform](https://www.nxp.com/design/development-boards/i-mx-evaluation-and-development-boards/mpu-linux-hosted-matter-development-platform:MPU-LINUX-MATTER-DEV-PLATFORM).
+We currently support 5 i.MX MPU platforms, which are the i.MX93 EVK, i.MX91 EVK, the i.MX8M Mini EVK, the i.MX6ULL EVK and the i.MX8ULP EVK. For more details, please refer to the [NXP i.MX MPU Matter Platform](https://www.nxp.com/design/development-boards/i-mx-evaluation-and-development-boards/mpu-linux-hosted-matter-development-platform:MPU-LINUX-MATTER-DEV-PLATFORM).
 
 <a name="How-to-build-the-Yocto-image"></a>
 
@@ -68,13 +72,10 @@ We currently support 4 i.MX MPU platforms, which are the i.MX93 EVK, the i.MX8M 
 
 # What's new
 
-- OTA support for IW612 and 88W8987 Wi-Fi/BT chipsets and NXP-thermostat-app firmware
-- Upgrade OpenThread to v1.4 stack
-- Support for OpenThread v1.4 RCPs
-- Support for Zigbee and Openthread dual pan, Zigbee PRO R23 compliant stack, Zigbee coordinator, router and end device, OTA/Matter Zigbee bridge features for onoff, level, light, sences, thermostat, custom cluster, etc on IW612
-- Support for new platform i.MX91 EVK
-- Integrated Linux L6.6.36_2.1.0 and Yocto scarthgap
-- Support Docker deployed Home Assistant and support Home Assistant Matter controller for both Phone App commissioner and on i.MX commissioner
+- Upgrade Matter clusters and Matter controller binaries based on Matter v1.4
+- Support IW610 chipset on i.MX 91EVK
+- Support K32W1 for Zigbee coordinator based on ZIGBEE_1.0.16b
+- Integrated Linux L6.6.52_2.2.0
 
 # How to build the Yocto image with integrated OpenThread Border Router
 
@@ -87,10 +88,15 @@ The following packages are required to build the Yocto Project:
     git gcc g++ pkg-config libssl-dev libglib2.0-dev libavahi-client-dev ninja-build \
     python3-venv python3-dev unzip libgirepository1.0-dev libcairo2-dev libreadline-dev
 
+Make sure that your default Python3 version is 3.10:
+
+    $ python3 --version
+      Python 3.10.x
+
 Then, Yocto build environment must be setup.
 
 The Yocto source code and meta-nxp-connectivity recipes are maintained with a manifest file, used by repo tool to download the corresponding source code.
-This document is tested with the i.MX Yocto 6.6.36-2.1.0 release. The hardware tested are: i.MX 8M Mini EVK, i.MX6ULL EVK, i.MX93 EVK, i.MX8ULP EVK and i.MX91 EVK.
+This document is tested with the i.MX Yocto 6.6.52_2.2.0 release. The hardware tested are: i.MX 8M Mini EVK, i.MX6ULL EVK, i.MX93 EVK, i.MX8ULP EVK and i.MX91 EVK.
 Run the commands below to download this release:
 
     $ mkdir ~/bin
@@ -100,11 +106,11 @@ Run the commands below to download this release:
 
     $ mkdir ${MY_YOCTO} # this directory will be the top directory of the Yocto source code
     $ cd ${MY_YOCTO}
-    $ repo init -u https://github.com/nxp-imx/imx-manifest -b imx-linux-scarthgap -m imx-6.6.36-2.1.0.xml
+    $ repo init -u https://github.com/nxp-imx/imx-manifest -b imx-linux-scarthgap -m imx-6.6.52-2.2.0.xml
     $ repo sync
     $ cd ${MY_YOCTO}/sources/meta-nxp-connectivity
     $ git remote update
-    $ git checkout imx_matter_2024_q3
+    $ git checkout imx_matter_2024_q4
 
 More information about the downloaded Yocto release can be found in the corresponding i.MX Yocto Project User’s Guide, which can be found at [NXP official website](http://www.nxp.com/imxlinux).
 
@@ -132,7 +138,7 @@ This will also create a build directory (namely bld-xwayland-imx8mm/ for i.MX8M 
     $ bitbake imx-image-multimedia
 
 After execution of previous commands, the Yocto images will be generated:
-- ${MY_YOCTO}/bld-xwayland-imx8mm-iw612/tmp/deploy/images/imx8mmevk-matter/imx-image-multimedia-imx8mmevk-matter.wic.zst for i.MX8M Mini EVK with certified IW612 chipset usage.
+- ${MY_YOCTO}/bld-xwayland-imx8mm/tmp/deploy/images/imx8mmevk-matter/imx-image-multimedia-imx8mmevk-matter.wic.zst for i.MX8M Mini EVK.
 - ${MY_YOCTO}/bld-xwayland-imx6ull/tmp/deploy/images/imx6ullevk/imx-image-multimedia-imx6ullevk.wic.zst for i.MX6ULL EVK.
 - ${MY_YOCTO}/bld-xwayland-imx93/tmp/deploy/images/imx93evk-iwxxx-matter/imx-image-multimedia-imx93evk-iwxxx-matter.wic.zst for i.MX93 EVK.
 - ${MY_YOCTO}/bld-xwayland-imx8ulp/tmp/deploy/images/imx8ulpevk/imx-image-multimedia-imx8ulpevk.wic.zst for i.MX8ULP EVK.
@@ -141,7 +147,7 @@ After execution of previous commands, the Yocto images will be generated:
 The zst images are symbolic link files, so you should copy them to a dedicated folder ${MY_images} before unziping them.
 
     # For i.MX8M Mini EVK
-    $ cp ${MY_YOCTO}/bld-xwayland-imx8mm-iw612/tmp/deploy/images/imx8mmevk-matter/imx-image-multimedia-imx8mmevk-matter.wic.zst ${MY_images}
+    $ cp ${MY_YOCTO}/bld-xwayland-imx8mm/tmp/deploy/images/imx8mmevk-matter/imx-image-multimedia-imx8mmevk-matter.wic.zst ${MY_images}
 
     # For i.MX6ULL EVK:
     $ cp ${MY_YOCTO}/bld-xwayland-imx6ull/tmp/deploy/images/imx6ullevk/imx-image-multimedia-imx6ullevk.wic.zst ${MY_images}
@@ -179,10 +185,10 @@ ___Be cautious when executing the dd command below, making sure that the output 
     $ zstd -d imx-image-multimedia-imx91evk-iwxxx-matter.wic.zst
     $ sudo dd if=imx-image-multimedia-imx91evk-iwxxx-matter.wic of=/dev/sdc bs=4M conv=fsync
 
-For use with the uuu method, please install [uuu](https://github.com/nxp-imx/mfgtools/releases/tag/uuu_1.5.21) on your host and make sure it is at least version 1.5.109.
+For use with the uuu method, please install [uuu](https://github.com/nxp-imx/mfgtools/releases/tag/uuu_1.5.182) on your host and make sure it is at least version 1.5.182.
 
     $ uuu -version
-    uuu (Universal Update Utility) for nxp imx chips -- libuuu_1.5.109-0-g6c3190c
+    uuu (Universal Update Utility) for nxp imx chips -- libuuu_1.5.182-0-gda3cd53
 
 ___Before flashing the image, follow the prompts on the board to put the board into serial download mode. After flashing the image, please put i.MX8M Mini EVK, i.MX6ULL EVK, i.MX93 EVK, i.MX91 EVK into MicroSD boot mode to boot the image from the MicroSD card. And please put i.MX8ULP EVK into EMMC boot mode to boot the image from the EMMC.___
 
@@ -278,13 +284,6 @@ Fetch the latest otbr source code and execute the build for OTBR:
       -DCMAKE_TOOLCHAIN_FILE=./examples/platforms/nxp/linux-imx/arm.cmake \
       -DProtobuf_PROTOC_EXECUTABLE=${PROTOC_DIR}/bin/protoc -DCMAKE_CXX_STANDARD=17
 
-    # For i.MX93 EVK and i.MX91 EVK
-    $ ./script/cmake-build -DOTBR_BORDER_ROUTING=ON -DOTBR_REST=ON -DOTBR_WEB=ON -DBUILD_TESTING=OFF -DOTBR_DBUS=ON \
-      -DOTBR_DNSSD_DISCOVERY_PROXY=ON -DOTBR_SRP_ADVERTISING_PROXY=ON -DOT_THREAD_VERSION=1.3 -DOTBR_INFRA_IF_NAME=mlan0 \
-      -DOTBR_BACKBONE_ROUTER=ON -DOT_BACKBONE_ROUTER_MULTICAST_ROUTING=ON -DOTBR_MDNS=avahi \
-      -DOT_POSIX_RCP_SPI_BUS=ON -DCMAKE_TOOLCHAIN_FILE=./examples/platforms/nxp/linux-imx/aarch64.cmake \
-      -DProtobuf_PROTOC_EXECUTABLE=${PROTOC_DIR}/bin/protoc -DCMAKE_CXX_STANDARD=17 -DOT_RCP_RESTORATION_MAX_COUNT=5
-
 The otbr-agent is built in \${MY_OTBR}/build/otbr/src/agent/otbr-agent.
 The otbr-web is built in \${MY_OTBR}/build/otbr/src/web/otbr-web.
 The ot-ctl is built in \${MY_OTBR}/build/otbr/third_party/openthread/repo/src/posix/ot-ctl.
@@ -336,7 +335,7 @@ Then configure the Thread device:
 
 On __i.MX8M Mini EVK__, __i.MX6ULL EVK__ or __i.MX8ULP EVK__, we will use a dedicated Thread device (NXP K32W or any third part RCP):
 Plugin the Thread module into the USB OTG port of __i.MX8M Mini EVK__, __i.MX6ULL EVK__ or __i.MX8ULP EVK__. A USB device should be visible as _/dev/ttyUSB_ or _/dev/ttyACM_.
-Once the USB device is detected, start te OTBR related services.
+Once the USB device is detected, start the OTBR related services.
 
 When using the RCP module, programmed with OpenThread Spinel firmware image, execute the following commands:
 
@@ -352,7 +351,13 @@ When using the RCP module, programmed with OpenThread Spinel firmware image, exe
 For __i.MX93 EVK__, we will use IW612 as Thread device:
 
     $ otbr-agent-iwxxx-spi -I wpan0 -B mlan0 'spinel+spi:///dev/spidev0.0?gpio-reset-device=/dev/gpiochip4&gpio-int-device=/dev/gpiochip5&gpio-int-line=10&gpio-reset-line=1&spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
-    spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
+    $ iptables -A FORWARD -i mlan0 -o wpan0 -j ACCEPT
+    $ iptables -A FORWARD -i wpan0 -o mlan0 -j ACCEPT
+    $ otbr-web &
+
+For __i.MX91 EVK__, we will use IW610 as Thread device:
+
+    $ otbr-agent-iw610-spi -I wpan0 -B mlan0 'spinel+spi:///dev/spidev0.0?gpio-reset-device=/dev/gpiochip4&gpio-int-device=/dev/gpiochip5&gpio-int-line=10&gpio-reset-line=1&spi-mode=0&spi-speed=1000000&spi-reset-delay=0' &
     $ iptables -A FORWARD -i mlan0 -o wpan0 -j ACCEPT
     $ iptables -A FORWARD -i wpan0 -o mlan0 -j ACCEPT
     $ otbr-web &
@@ -363,13 +368,13 @@ A document explaining how to use Matter with OTBR and OpenThread on the i.MX MPU
 
 # How to build Matter application
 
-The Matter application has been installed into the Yocto image by default. If you want build it separately, run the below commands to download the Matter application source code and switch to v1.2.1 branch:
+The Matter application has been installed into the Yocto image by default. If you want build it separately, run the below commands to download the Matter application source code and switch to v1.4 branch:
 
     $ mkdir ${MY_Matter_Apps}     # this is top level directory of this project
     $ cd ${MY_Matter_Apps}
     $ git clone https://github.com/NXP/matter.git
     $ cd matter
-    $ git checkout origin/v1.3-branch-nxp_imx_2024_q3
+    $ git checkout origin/v1.4-branch-nxp_imx_2024_q4
     $ git submodule update --init
 
  ___Make sure the shell isn't in Yocto SDK environment___. Then, export a shell environment variable named IMX_SDK_ROOT to specify the path of the SDK.
@@ -457,7 +462,7 @@ After executing the above command, the chip-tool executable files will be found 
 
 An official Matter document explaining how to use chip-tool as a Matter controller can be found [here](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/chip_tool_guide.md).
 
-A document explaining how to use Matter applications on the i.MX MPU platform can be found in the [NXP Matter demos guide](docs/guides/nxp_mpu_matter_demos.md). A document explaining how to use chip-tool-web application can be found in the [NXP chip-tool-web guide](docs/guides/nxp_chip_tool_web_guide.md). A document explaining how to use NXP customized Zigbee bridge application imx-chip-bridge-app application can be found in the [NXP imx-chip-bridge-app guide](https://github.com/NXP/matter/blob/v1.3-branch-nxp_imx_2024_q3/examples/bridge-app/nxp/linux-imx/README.md). A document explaining how to run Matter Commissioning in Home Assistant application based on i.MX MPU platforms in the [NXP Matter HA guide](docs/guides/nxp_mpu_matter_Home_Assistant.md)
+A document explaining how to use Matter applications on the i.MX MPU platform can be found in the [NXP Matter demos guide](docs/guides/nxp_mpu_matter_demos.md). A document explaining how to use chip-tool-web application can be found in the [NXP chip-tool-web guide](docs/guides/nxp_chip_tool_web_guide.md). A document explaining how to use NXP customized Zigbee bridge application imx-chip-bridge-app application can be found in the [NXP imx-chip-bridge-app guide](https://github.com/NXP/matter/blob/v1.4-branch-nxp_imx_2024_q4/examples/bridge-app/nxp/linux-imx/README.md). A document explaining how to run Matter Commissioning in Home Assistant application based on i.MX MPU platforms in the [NXP Matter HA guide](docs/guides/nxp_mpu_matter_Home_Assistant.md)
 
 <a name="Security-configuration-for-Matter"></a>
 
